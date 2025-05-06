@@ -7,6 +7,7 @@ from pyomo.environ import (
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 from idaes.core.util.tables import create_stream_table_dataframe
 from idaes.core.util.exceptions import ConfigurationError
+
 # Import IDAES cores
 from idaes.core import (
     declare_process_block_class,
@@ -30,12 +31,13 @@ class dsiData(UnitModelBlockData):
     This unit model is used to represent a direct steam injection
     process. There are no degrees of freedom, but the steam is mixed with the inlet fluid to heat it up.
     It is assumed that the pressure of the fluid doesn't change, i.e the steam loses its pressure.
-    However, the enthalpy of the steam remains the same. 
+    However, the enthalpy of the steam remains the same.
     This allows to use two different property packages for the steam and for the inlet fluid, however,
     it only works if the reference enthalpy of the steam and the inlet fluid are the same.
 
     It's basically a combination of a mixer and a translator.
     """
+
     # CONFIG are options for the unit model
     CONFIG = ConfigBlock()
 
@@ -120,7 +122,6 @@ class dsiData(UnitModelBlockData):
         # This creates blank scaling factors, which are populated later
         self.scaling_factor = Suffix(direction=Suffix.EXPORT)
 
-
         # Add state blocks for inlet, outlet, and waste
         # These include the state variables and any other properties on demand
         # Add inlet block
@@ -136,7 +137,9 @@ class dsiData(UnitModelBlockData):
         tmp_dict["defined_state"] = True
         tmp_dict["has_phase_equilibrium"] = True
         self.properties_mixed_unheated = self.config.property_package.state_block_class(
-            self.flowsheet().config.time, doc="Material properties of mixture, before accounting for temperature difference", **tmp_dict
+            self.flowsheet().config.time,
+            doc="Material properties of mixture, before accounting for temperature difference",
+            **tmp_dict,
         )
 
         # Add outlet block
@@ -145,34 +148,39 @@ class dsiData(UnitModelBlockData):
         self.properties_out = self.config.property_package.state_block_class(
             self.flowsheet().config.time,
             doc="Material properties of outlet",
-            **tmp_dict
+            **tmp_dict,
         )
 
         # Add steam inlet block
         steam_dict = dict(**self.config.steam_property_package_args)
         steam_dict["parameters"] = self.config.steam_property_package
-        steam_dict["defined_state"] = True  
+        steam_dict["defined_state"] = True
         self.properties_steam_in = self.config.steam_property_package.state_block_class(
-            self.flowsheet().config.time, doc="Material properties of steam inlet", **steam_dict
+            self.flowsheet().config.time,
+            doc="Material properties of steam inlet",
+            **steam_dict,
         )
 
-        
-        
         # To calculate the amount of enthalpy to add to the inlet fluid, we need to know the difference in enthalpy between steam at that T and P
         # and steam at its inlet conditions. Note this is assuming that effects of composition (the steam will no longer be pure water) are negligible.
         # Note that this state block is just for calcuating, and not an actual inlet or outlet.
-        
+
         steam_dict["defined_state"] = False  # This doesn't affect pure components.
         steam_dict["has_phase_equilibrium"] = True
-        self.properties_steam_cooled = self.config.steam_property_package.state_block_class(
-            self.flowsheet().config.time, doc="Material properties of cooled steam", **steam_dict
+        self.properties_steam_cooled = (
+            self.config.steam_property_package.state_block_class(
+                self.flowsheet().config.time,
+                doc="Material properties of cooled steam",
+                **steam_dict,
+            )
         )
 
         # Add ports
         self.add_port(name="outlet", block=self.properties_out)
         self.add_port(name="inlet", block=self.properties_milk_in, doc="Inlet port")
-        self.add_port(name="steam_inlet", block=self.properties_steam_in, doc="Steam inlet port")
-
+        self.add_port(
+            name="steam_inlet", block=self.properties_steam_in, doc="Steam inlet port"
+        )
 
         # CONDITIONS
 
@@ -184,16 +192,21 @@ class dsiData(UnitModelBlockData):
             doc="Set the temperature of the cooled steam to be the same as the inlet fluid",
         )
         def eq_steam_cooled_temperature(b, t):
-            return b.properties_steam_cooled[t].temperature == b.properties_milk_in[t].temperature
-        
+            return (
+                b.properties_steam_cooled[t].temperature
+                == b.properties_milk_in[t].temperature
+            )
+
         # Pressure (= other inlet pressure)
         @self.Constraint(
             self.flowsheet().time,
             doc="Set the pressure of the cooled steam to be the same as the inlet fluid",
         )
         def eq_steam_cooled_pressure(b, t):
-            return b.properties_steam_cooled[t].pressure == b.properties_milk_in[t].pressure
-
+            return (
+                b.properties_steam_cooled[t].pressure
+                == b.properties_milk_in[t].pressure
+            )
 
         # Flow = steam_flow
         @self.Constraint(
@@ -202,10 +215,12 @@ class dsiData(UnitModelBlockData):
             doc="Set the composition of the cooled steam to be the same as the steam inlet",
         )
         def eq_steam_cooled_composition(b, t, c):
-            return 0 == sum(b.properties_steam_cooled[t].get_material_flow_terms(p, c) - b.properties_steam_in[t].get_material_flow_terms(p, c)
-                for p in b.properties_steam_in[t].phase_list)
-        
-        
+            return 0 == sum(
+                b.properties_steam_cooled[t].get_material_flow_terms(p, c)
+                - b.properties_steam_in[t].get_material_flow_terms(p, c)
+                for p in b.properties_steam_in[t].phase_list
+            )
+
         # CALCULATE ENTHALPY DIFFERENCE
         @self.Expression(
             self.flowsheet().time,
@@ -215,8 +230,10 @@ class dsiData(UnitModelBlockData):
             Calculate the difference in enthalpy between the steam inlet and the cooled steam.
             This is used to calculate the amount of enthalpy to add to the inlet fluid.
             """
-            return (b.properties_steam_in[t].enth_mol - b.properties_steam_cooled[t].enth_mol) * b.properties_steam_in[t].flow_mol
-
+            return (
+                b.properties_steam_in[t].enth_mol
+                - b.properties_steam_cooled[t].enth_mol
+            ) * b.properties_steam_in[t].flow_mol
 
         # MIXING (without changing temperature)
 
@@ -230,7 +247,7 @@ class dsiData(UnitModelBlockData):
                 b.properties_mixed_unheated[t].pressure
                 == b.properties_milk_in[t].pressure
             )
-        
+
         # Temperature (= inlet temperature)
         @self.Constraint(
             self.flowsheet().time,
@@ -241,7 +258,7 @@ class dsiData(UnitModelBlockData):
                 b.properties_mixed_unheated[t].temperature
                 == b.properties_milk_in[t].temperature
             )
-        
+
         # Flow = inlet flow + steam flow
         @self.Constraint(
             self.flowsheet().time,
@@ -249,15 +266,20 @@ class dsiData(UnitModelBlockData):
             doc="Mass balance",
         )
         def eq_mixed_composition(b, t, c):
-            return (
-                0 == sum(b.properties_milk_in[t].get_material_flow_terms(p, c)
-                         + (b.properties_steam_in[t].get_material_flow_terms(p, c)
-                         if c in b.properties_steam_in[t].component_list  # handle the case where a component isn't in the steam inlet (e.g no milk in helmholtz)
-                         else 0)
-                    - b.properties_mixed_unheated[t].get_material_flow_terms(p, c)
-                    for p in b.properties_milk_in[t].phase_list
-                    if (p,c) in b.properties_milk_in[t].phase_component_set) # handle the case where a component is not in that phase (e.g no milk vapor)
-            )
+            return 0 == sum(
+                b.properties_milk_in[t].get_material_flow_terms(p, c)
+                + (
+                    b.properties_steam_in[t].get_material_flow_terms(p, c)
+                    if c
+                    in b.properties_steam_in[
+                        t
+                    ].component_list  # handle the case where a component isn't in the steam inlet (e.g no milk in helmholtz)
+                    else 0
+                )
+                - b.properties_mixed_unheated[t].get_material_flow_terms(p, c)
+                for p in b.properties_milk_in[t].phase_list
+                if (p, c) in b.properties_milk_in[t].phase_component_set
+            )  # handle the case where a component is not in that phase (e.g no milk vapor)
 
         # OUTLET BLOCK
 
@@ -267,38 +289,32 @@ class dsiData(UnitModelBlockData):
             doc="Pressure balance",
         )
         def eq_outlet_pressure(b, t):
-            return (
-                b.properties_out[t].pressure
-                == b.properties_milk_in[t].pressure
-            )
-        
+            return b.properties_out[t].pressure == b.properties_milk_in[t].pressure
+
         # Enthalpy (= mixed enthalpy + delta steam enthalpy)
         @self.Constraint(
             self.flowsheet().time,
             doc="Energy balance",
         )
         def eq_outlet_combined_enthalpy(b, t):
-            return (
-                b.properties_out[t].enth_mol
-                == b.properties_mixed_unheated[t].enth_mol
-                + (b.steam_delta_h[t] / b.properties_mixed_unheated[t].flow_mol)
-            )
-        
+            return b.properties_out[t].enth_mol == b.properties_mixed_unheated[
+                t
+            ].enth_mol + (b.steam_delta_h[t] / b.properties_mixed_unheated[t].flow_mol)
+
         # Flow = mixed flow
-        
+
         @self.Constraint(
             self.flowsheet().time,
             self.config.property_package.component_list,
             doc="Mass balance for the outlet",
         )
         def eq_outlet_composition(b, t, c):
-            return (
-                0 == sum(b.properties_out[t].get_material_flow_terms(p, c)
-                         - b.properties_mixed_unheated[t].get_material_flow_terms(p, c)
-                    for p in b.properties_out[t].phase_list
-                    if (p,c) in b.properties_out[t].phase_component_set) # handle the case where a component is not in that phase (e.g no milk vapor)
-            )
-
+            return 0 == sum(
+                b.properties_out[t].get_material_flow_terms(p, c)
+                - b.properties_mixed_unheated[t].get_material_flow_terms(p, c)
+                for p in b.properties_out[t].phase_list
+                if (p, c) in b.properties_out[t].phase_component_set
+            )  # handle the case where a component is not in that phase (e.g no milk vapor)
 
         # I'm suspicious about these two constraints, but it seems to be the only way to get the flow balance to work.
         @self.Constraint(
@@ -308,40 +324,42 @@ class dsiData(UnitModelBlockData):
         def eq_flow_balance(b, t):
             return (
                 b.properties_mixed_unheated[t].flow_mol
-                == b.properties_milk_in[t].flow_mol
-                + b.properties_steam_in[t].flow_mol
+                == b.properties_milk_in[t].flow_mol + b.properties_steam_in[t].flow_mol
             )
+
         @self.Constraint(
             self.flowsheet().time,
             doc="Flow balance",
         )
         def eq_flow_balance_2(b, t):
             return (
-                b.properties_out[t].flow_mol
-                == b.properties_mixed_unheated[t].flow_mol
+                b.properties_out[t].flow_mol == b.properties_mixed_unheated[t].flow_mol
             )
-        
 
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()
-    
+
     def initialize(blk, *args, **kwargs):
         blk.properties_milk_in.initialize()
         blk.properties_steam_in.initialize()
 
         for t in blk.flowsheet().time:
             # copy temperature and pressure from properties_milk_in to properties_steam_cooled
-            blk.properties_steam_cooled[t].temperature.set_value(blk.properties_milk_in[t].temperature.value)
-            blk.properties_steam_cooled[t].pressure.set_value(blk.properties_milk_in[t].pressure.value)
+            blk.properties_steam_cooled[t].temperature.set_value(
+                blk.properties_milk_in[t].temperature.value
+            )
+            blk.properties_steam_cooled[t].pressure.set_value(
+                blk.properties_milk_in[t].pressure.value
+            )
             # Copy composition from properties_steam_in to properties_steam_cooled
-            blk.properties_steam_cooled[t].flow_mol.set_value(blk.properties_steam_in[t].flow_mol.value)
+            blk.properties_steam_cooled[t].flow_mol.set_value(
+                blk.properties_steam_in[t].flow_mol.value
+            )
             # If it's steam, there's only one component, so we prolly don't need to worry about composition.
             # But may want TODO this for other cases.
 
-
         blk.properties_steam_cooled.initialize()
         blk.properties_mixed_unheated.initialize()
-
 
         blk.properties_out.initialize()
         pass
@@ -354,14 +372,16 @@ class dsiData(UnitModelBlockData):
         """
         try:
             return create_stream_table_dataframe(
-                {"outlet": self.outlet,
-                "inlet": self.inlet,
-                "steam_inlet": self.steam_inlet}, time_point=time_point
-
+                {
+                    "outlet": self.outlet,
+                    "inlet": self.inlet,
+                    "steam_inlet": self.steam_inlet,
+                },
+                time_point=time_point,
             )
         except AttributeError:
             raise ConfigurationError(
                 f"Unit model {self.name} does not have the standard Port "
                 f"names (inlet and outlet). Please contact the unit model "
                 f"developer to develop a unit specific stream table."
-            )            
+            )
