@@ -134,7 +134,7 @@ class dsiData(UnitModelBlockData):
 
         # We need to calculate the enthalpy of the composition, before adding additional enthalpy from the temperature difference.
         # so we'll add another state block to do that.
-        tmp_dict["defined_state"] = True
+        tmp_dict["defined_state"] = False
         tmp_dict["has_phase_equilibrium"] = True
         self.properties_mixed_unheated = self.config.property_package.state_block_class(
             self.flowsheet().config.time,
@@ -143,7 +143,7 @@ class dsiData(UnitModelBlockData):
         )
 
         # Add outlet block
-        tmp_dict["defined_state"] = True
+        tmp_dict["defined_state"] = False
         tmp_dict["has_phase_equilibrium"] = True
         self.properties_out = self.config.property_package.state_block_class(
             self.flowsheet().config.time,
@@ -155,6 +155,8 @@ class dsiData(UnitModelBlockData):
         steam_dict = dict(**self.config.steam_property_package_args)
         steam_dict["parameters"] = self.config.steam_property_package
         steam_dict["defined_state"] = True
+        tmp_dict["has_phase_equilibrium"] = True
+
         self.properties_steam_in = self.config.steam_property_package.state_block_class(
             self.flowsheet().config.time,
             doc="Material properties of steam inlet",
@@ -316,25 +318,6 @@ class dsiData(UnitModelBlockData):
                 if (p, c) in b.properties_out[t].phase_component_set
             )  # handle the case where a component is not in that phase (e.g no milk vapor)
 
-        # I'm suspicious about these two constraints, but it seems to be the only way to get the flow balance to work.
-        @self.Constraint(
-            self.flowsheet().time,
-            doc="Flow balance",
-        )
-        def eq_flow_balance(b, t):
-            return (
-                b.properties_mixed_unheated[t].flow_mol
-                == b.properties_milk_in[t].flow_mol + b.properties_steam_in[t].flow_mol
-            )
-
-        @self.Constraint(
-            self.flowsheet().time,
-            doc="Flow balance",
-        )
-        def eq_flow_balance_2(b, t):
-            return (
-                b.properties_out[t].flow_mol == b.properties_mixed_unheated[t].flow_mol
-            )
 
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()
@@ -345,9 +328,9 @@ class dsiData(UnitModelBlockData):
 
         for t in blk.flowsheet().time:
             # copy temperature and pressure from properties_milk_in to properties_steam_cooled
-            blk.properties_steam_cooled[t].temperature.set_value(
-                blk.properties_milk_in[t].temperature.value
-            )
+            # blk.properties_steam_cooled[t].temperature.set_value(
+            #     blk.properties_milk_in[t].temperature.value
+            # )
             blk.properties_steam_cooled[t].pressure.set_value(
                 blk.properties_milk_in[t].pressure.value
             )
