@@ -37,6 +37,9 @@ class GenericTranslatorData(TranslatorData):
     """
 
     def build(self):
+        self.CONFIG.outlet_state_defined = False # See constraint for flow
+        #self.CONFIG.has_phase_equilibrium = True # I don't think it matters if this is set, becuase in theory the phase equilibrium should
+        # already have been calculated in the inlet stream.
         super().build()
 
         # Pressure (= inlet pressure)
@@ -57,10 +60,17 @@ class GenericTranslatorData(TranslatorData):
                 b.properties_in[t].temperature == b.properties_out[t].temperature
             )
         
-        # Flow = mixed flow
+        # Flow
         @self.Constraint(
             self.flowsheet().time,
-            self.properties_out.phase_component_set,
+            # In theory, we should be able to use the entire phase_component_set.
+            # However, we get a problem with helmholtz pure components when we do this:
+            # if we use StateVars.PH, the property package is overdefined.
+            # That's because it doesn't store the phases seperately, so 
+            # setting defined_state to True doesn't add an extra degree of freedom (i.e remove a constraint) like it normally would.
+            # So, we're going to have to use defined_state = False all the time, and remove one of the flow constraints.
+            # In theory, it can be calculated from the other constraints.
+            [i for i in self.properties_out.phase_component_set][1:],
             doc="Mass balance for the outlet",
         )
         def eq_outlet_composition(b, t, p, c):

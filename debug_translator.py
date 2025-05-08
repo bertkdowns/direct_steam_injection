@@ -25,12 +25,11 @@ m.fs = FlowsheetBlock(dynamic=False)
 m.fs.steam_properties = HelmholtzParameterBlock(
         pure_component="h2o", amount_basis=AmountBasis.MOLE,
         phase_presentation=PhaseType.LG,
-        state_vars=StateVars.TPX,
+        state_vars=StateVars.PH,
     )
 m.fs.milk_properties = GenericParameterBlock(**milk_configuration)
 m.fs.translator = GenericTranslator(inlet_property_package=m.fs.milk_properties, 
                                     outlet_property_package=m.fs.steam_properties,
-                                    has_phase_equilibrium=False, 
                                     outlet_state_defined=True)
 
 m.fs.translator.inlet.flow_mol.fix(1)
