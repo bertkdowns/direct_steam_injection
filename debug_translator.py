@@ -13,6 +13,7 @@ from idaes.models.properties.general_helmholtz import (
         HelmholtzThermoExpressions,
         AmountBasis,
         PhaseType,
+        StateVars
     )
 from idaes.models.properties.modular_properties import GenericParameterBlock
 from milk_config import milk_configuration
@@ -24,9 +25,13 @@ m.fs = FlowsheetBlock(dynamic=False)
 m.fs.steam_properties = HelmholtzParameterBlock(
         pure_component="h2o", amount_basis=AmountBasis.MOLE,
         phase_presentation=PhaseType.LG,
+        state_vars=StateVars.TPX,
     )
 m.fs.milk_properties = GenericParameterBlock(**milk_configuration)
-m.fs.translator = GenericTranslator(inlet_property_package=m.fs.milk_properties, outlet_property_package=m.fs.steam_properties)
+m.fs.translator = GenericTranslator(inlet_property_package=m.fs.milk_properties, 
+                                    outlet_property_package=m.fs.steam_properties,
+                                    has_phase_equilibrium=False, 
+                                    outlet_state_defined=True)
 
 m.fs.translator.inlet.flow_mol.fix(1)
 m.fs.translator.inlet.temperature.fix(300 * pyo.units.K)
@@ -34,6 +39,11 @@ m.fs.translator.inlet.pressure.fix(101325)
 m.fs.translator.inlet.mole_frac_comp[0,"h2o"].fix(0.99)
 m.fs.translator.inlet.mole_frac_comp[0,"milk_solid"].fix(0.01)
 
+m.fs.translator.display()
+print(degrees_of_freedom(m.fs.translator.properties_in))
+print(degrees_of_freedom(m.fs.translator.properties_out))
+
+print(degrees_of_freedom(m.fs.translator))
 assert degrees_of_freedom(m.fs) == 0
 
 opt = pyo.SolverFactory("ipopt")

@@ -60,13 +60,11 @@ class GenericTranslatorData(TranslatorData):
         # Flow = mixed flow
         @self.Constraint(
             self.flowsheet().time,
-            self.config.outlet_property_package.component_list,
+            self.properties_out.phase_component_set,
             doc="Mass balance for the outlet",
         )
-        def eq_outlet_composition(b, t, c):
-            return 0 == sum(
-                b.properties_out[t].get_material_flow_terms(p, c)
-                - b.properties_in[t].get_material_flow_terms(p, c)
-                for p in b.properties_out[t].phase_list
-                if (p, c) in b.properties_out[t].phase_component_set
-            )  # handle the case where a component is not in that phase (e.g no milk vapor)
+        def eq_outlet_composition(b, t, p, c):
+            return b.properties_out[t].get_material_flow_terms(p, c) == \
+                b.properties_in[t].get_material_flow_terms(p, c)
+
+
