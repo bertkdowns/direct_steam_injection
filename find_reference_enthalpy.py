@@ -16,7 +16,7 @@ from idaes.models.properties.general_helmholtz import (
         StateVars
     )
 from idaes.models.properties.modular_properties import GenericParameterBlock
-from milk_config import milk_configuration
+from water_config import water_configuration
 
 
 m = pyo.ConcreteModel()
@@ -26,7 +26,7 @@ m.fs.steam_properties = HelmholtzParameterBlock(
         phase_presentation=PhaseType.LG,
         state_vars= StateVars.PH
     )
-m.fs.milk_properties = GenericParameterBlock(**milk_configuration)
+m.fs.milk_properties = GenericParameterBlock(**water_configuration)
 
 m.fs.milk_sb = m.fs.milk_properties.build_state_block(
     m.fs.time,
@@ -40,30 +40,34 @@ m.fs.helm_sb = m.fs.steam_properties.build_state_block(
 )
 
 # Make the milk sb pure water
-m.fs.milk_sb[0].mole_frac_comp["h2o"].fix(0.9999999)
-m.fs.milk_sb[0].mole_frac_comp["milk_solid"].fix(0.0000001)
+m.fs.milk_sb[0].mole_frac_comp["h2o"].fix(1)
 
 # Set flow
 m.fs.milk_sb[0].flow_mol.fix(1)
 m.fs.helm_sb[0].flow_mol.fix(1)
 
 # Set both stateblocks to the same temperature and pressure
-m.fs.milk_sb[0].temperature.fix(300 * pyo.units.K)
+m.fs.milk_sb[0].enth_mol.set_value(-281870)
 m.fs.milk_sb[0].pressure.fix(101325)
 m.fs.helm_sb[0].enth_mol.fix(
     m.fs.steam_properties.htpx(p=101325 * pyo.units.Pa, T= 300 * pyo.units.K)
 )
 m.fs.helm_sb[0].pressure.fix(101325)
 
+@m.fs.Constraint(
+    m.fs.time)
+def constraint_rule(b,t):
+    return m.fs.milk_sb[t].temperature == m.fs.helm_sb[t].temperature
 
 print(degrees_of_freedom(m.fs.milk_sb[0]))
 print(degrees_of_freedom(m.fs.helm_sb[0]))
-assert degrees_of_freedom(m.fs.milk_sb) == 0
-assert degrees_of_freedom(m.fs.helm_sb) == 0
 assert degrees_of_freedom(m.fs) == 0
 
+m.fs.milk_sb.initialize()
+m.fs.helm_sb.initialize()
+
 opt = pyo.SolverFactory("ipopt")
-results = opt.solve(m, tee=False)
+results = opt.solve(m, tee=True)
 assert results.solver.termination_condition == pyo.TerminationCondition.optimal
 #m.fs.display()
 
@@ -74,7 +78,6 @@ print("helm enth_mol",pyo.value( m.fs.helm_sb[0].enth_mol))
 print("difference to add to milk:",pyo.value( m.fs.helm_sb[0].enth_mol) -pyo.value( m.fs.milk_sb[0].enth_mol))
 
 print("--------------- vapor version ----------")
-m.fs.milk_sb[0].temperature.fix(400 * pyo.units.K)
 m.fs.milk_sb[0].pressure.fix(101325)
 m.fs.helm_sb[0].enth_mol.fix(
     m.fs.steam_properties.htpx(p=101325 * pyo.units.Pa, T= 400 * pyo.units.K)

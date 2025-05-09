@@ -9,7 +9,7 @@ from pyomo.environ import units as pyunits
 # Import IDAES cores
 from idaes.core import LiquidPhase, VaporPhase, Component, PhaseType as PT
 
-from idaes.models.properties.modular_properties.state_definitions import FTPx
+from idaes.models.properties.modular_properties.state_definitions import FTPx, FPhx
 from idaes.models.properties.modular_properties.eos.ideal import Ideal
 from idaes.models.properties.modular_properties.phase_equil import SmoothVLE
 from idaes.models.properties.modular_properties.phase_equil.bubble_dew import (
@@ -48,7 +48,7 @@ _log = logging.getLogger(__name__)
 # Department of Chemical Engineering Imperial College London,
 # South Kensington Campus, London SW7 2AZ.  U.K
 
-milk_configuration = {
+water_configuration = {
     # Specifying components
     "components": {
         "h2o": {
@@ -111,7 +111,7 @@ milk_configuration = {
                     "5": (9.3701e-6, pyunits.J / pyunits.kmol / pyunits.K**5),
                 },
                 "enth_mol_form_liq_comp_ref": (
-                    -285.83e3 + 283900,
+                    -285.83e3,
                     pyunits.J / pyunits.mol,
                 ),  # [1]
                 "enth_mol_form_vap_comp_ref": (0, pyunits.J / pyunits.mol),  # [1]
@@ -128,48 +128,6 @@ milk_configuration = {
                     "B": (1435.264, pyunits.K),
                     "C": (-64.848, pyunits.K),
                 },
-            },
-        },
-        "milk_solid": {
-            "type": Component,
-            "valid_phase_types": PT.liquidPhase,
-            "dens_mol_liq_comp": Perrys,
-            "enth_mol_liq_comp": Perrys,
-            "entr_mol_liq_comp": Perrys,
-            "parameter_data": {
-                "mw": (232e-3, pyunits.kg / pyunits.mol),  # F.Glasser et al Technical Note: Estimation of Milk Fatty Acid Yield from Milk Fat Data https://www.sciencedirect.com/science/article/pii/S0022030207717241#:~:text=The%20mean%20molecular%20weight%20of,%3D%209%20g%2Fmol).
-                "pressure_crit": (1332.96*1000, pyunits.Pa), # https://www.chemeo.com/cid/13-615-4/Oleic-Acid
-                "temperature_crit": (937.21, pyunits.K),  ##https://www.chemeo.com/cid/13-615-4/Oleic-Acid aprrox as Oleic acid Joback method
-                "dens_mol_liq_comp_coeff": {
-                    "eqn_type": 1,
-                    "1": (
-                        5.459,
-                        pyunits.kmol * pyunits.m**-3,
-                    ),  # [2] pg. 2-98, temperature range 273.16 K - 333.15 K
-                    "2": (0.30542, None),
-                    "3": (647.13, pyunits.K),
-                    "4": (0.081, None),
-                },
-                "cp_mol_liq_comp_coeff": {
-                    "1": (
-                        470599.7666604,
-                        pyunits.J / pyunits.kmol / pyunits.K,
-                    ),  # [2] pg 2-174, temperature range 273.16 K - 533.15 K
-                    "2": (-6423.9816705, pyunits.J / pyunits.kmol / pyunits.K**2),
-                    "3": (32.8747223, pyunits.J / pyunits.kmol / pyunits.K**3),
-                    "4": (-0.0747202, pyunits.J / pyunits.kmol / pyunits.K**4),
-                    "5": (0.0000637, pyunits.J / pyunits.kmol / pyunits.K**5),
-                },
-                "enth_mol_form_liq_comp_ref": (
-                    0,
-                    pyunits.J / pyunits.mol,
-                ),  # [1]
-                # formation is phase transition. Entropy associated with going from solid to liquid.
-                # for now we are just using oleic acid. https://webbook.nist.gov/cgi/cbook.cgi?ID=C112801&Mask=6F
-                "entr_mol_form_liq_comp_ref": (
-                    138.4,
-                    pyunits.J / pyunits.mol / pyunits.K,
-                ),
             },
         },
     },
