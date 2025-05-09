@@ -47,21 +47,18 @@ m.fs.milk_sb[0].flow_mol.fix(1)
 m.fs.helm_sb[0].flow_mol.fix(1)
 
 # Set both stateblocks to the same temperature and pressure
-m.fs.milk_sb[0].enth_mol.set_value(-281870)
+m.fs.milk_sb[0].temperature.fix(300 * pyo.units.K)
 m.fs.milk_sb[0].pressure.fix(101325)
 m.fs.helm_sb[0].enth_mol.fix(
     m.fs.steam_properties.htpx(p=101325 * pyo.units.Pa, T= 300 * pyo.units.K)
 )
 m.fs.helm_sb[0].pressure.fix(101325)
 
-@m.fs.Constraint(
-    m.fs.time)
-def constraint_rule(b,t):
-    return m.fs.milk_sb[t].temperature == m.fs.helm_sb[t].temperature
-
 print(degrees_of_freedom(m.fs.milk_sb[0]))
 print(degrees_of_freedom(m.fs.helm_sb[0]))
 assert degrees_of_freedom(m.fs) == 0
+
+m.fs.milk_sb.display()
 
 m.fs.milk_sb.initialize()
 m.fs.helm_sb.initialize()
@@ -78,6 +75,7 @@ print("helm enth_mol",pyo.value( m.fs.helm_sb[0].enth_mol))
 print("difference to add to milk:",pyo.value( m.fs.helm_sb[0].enth_mol) -pyo.value( m.fs.milk_sb[0].enth_mol))
 
 print("--------------- vapor version ----------")
+m.fs.milk_sb[0].temperature.fix(400 * pyo.units.K)
 m.fs.milk_sb[0].pressure.fix(101325)
 m.fs.helm_sb[0].enth_mol.fix(
     m.fs.steam_properties.htpx(p=101325 * pyo.units.Pa, T= 400 * pyo.units.K)

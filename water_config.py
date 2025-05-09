@@ -19,6 +19,7 @@ from idaes.models.properties.modular_properties.phase_equil.forms import fugacit
 
 from idaes.models.properties.modular_properties.pure.Perrys import Perrys
 from idaes.models.properties.modular_properties.pure.NIST import NIST
+from idaes.models.properties.modular_properties.phase_equil.smooth_VLE_2 import CubicComplementarityVLE
 
 # Set up logger
 _log = logging.getLogger(__name__)
@@ -155,6 +156,6 @@ water_configuration = {
     "temperature_ref": (298.15, pyunits.K),
     # Defining phase equilibria
     "phases_in_equilibrium": [("Vap", "Liq")],
-    "phase_equilibrium_state": {("Vap", "Liq"): SmoothVLE},
+    "phase_equilibrium_state": {("Vap", "Liq"): CubicComplementarityVLE},
     "bubble_dew_method": IdealBubbleDew,
 }
