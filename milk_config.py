@@ -97,7 +97,7 @@ milk_configuration = {
                         pyunits.J * pyunits.mol**-1 * pyunits.K**-1 * pyunits.kiloK**2,
                     ),
                     "F": (-250.8810, pyunits.kJ / pyunits.mol),
-                    "G": (223.3967, pyunits.J / pyunits.mol / pyunits.K),
+                    "G": (202.3, pyunits.J / pyunits.mol / pyunits.K),
                     "H": (-241.83 - 45.6, pyunits.kJ / pyunits.mol),
                 },
                 "cp_mol_liq_comp_coeff": {
@@ -116,11 +116,11 @@ milk_configuration = {
                     pyunits.J / pyunits.mol,
                 ),  # [1]
                 "entr_mol_form_liq_comp_ref": (
-                    69.95, 
+                    0, 
                     pyunits.J / pyunits.mol / pyunits.K,
                 ),  # [1]
                 "entr_mol_form_vap_comp_ref": (
-                    188.835,  
+                    0,# AGAIN, NIST doesn't use this  
                     pyunits.J / pyunits.mol / pyunits.K,
                 ),  # [1]
                 "pressure_sat_comp_coeff": {
@@ -165,9 +165,8 @@ milk_configuration = {
                     pyunits.J / pyunits.mol,
                 ),  # [1]
                 # formation is phase transition. Entropy associated with going from solid to liquid.
-                # for now we are just using oleic acid. https://webbook.nist.gov/cgi/cbook.cgi?ID=C112801&Mask=6F
                 "entr_mol_form_liq_comp_ref": (
-                    138.4,
+                    0,
                     pyunits.J / pyunits.mol / pyunits.K,
                 ),
             },
@@ -193,8 +192,8 @@ milk_configuration = {
         "temperature": (273.15, 323.15, 1000, pyunits.K),
         "pressure": (10000, 108900, 1e7, pyunits.Pa),
     },
-    "pressure_ref": (611, pyunits.Pa),
-    "temperature_ref": (275.25, pyunits.K),
+    "pressure_ref": (612.5, pyunits.Pa),
+    "temperature_ref": (273.2, pyunits.K),
     # Defining phase equilibria
     "phases_in_equilibrium": [("Vap", "Liq")],
     "phase_equilibrium_state": {("Vap", "Liq"): SmoothVLE},
