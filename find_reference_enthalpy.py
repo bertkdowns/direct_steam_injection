@@ -70,15 +70,18 @@ assert results.solver.termination_condition == pyo.TerminationCondition.optimal
 
 # Calculate the enthalpy of the milk stateblock
 print("milk enth_mol",pyo.value( m.fs.milk_sb[0].enth_mol))
+print("milk vapor fraction",pyo.value( m.fs.milk_sb[0].phase_frac["Vap"]))
 
 print("helm enth_mol",pyo.value( m.fs.helm_sb[0].enth_mol))
+print("helm vapor fraction",pyo.value( m.fs.helm_sb[0].vapor_frac))
+
 print("difference to add to milk:",pyo.value( m.fs.helm_sb[0].enth_mol) -pyo.value( m.fs.milk_sb[0].enth_mol))
 
 print("--------------- vapor version ----------")
-m.fs.milk_sb[0].temperature.fix(400 * pyo.units.K)
+m.fs.milk_sb[0].temperature.fix(350 * pyo.units.K)
 m.fs.milk_sb[0].pressure.fix(101325)
 m.fs.helm_sb[0].enth_mol.fix(
-    m.fs.steam_properties.htpx(p=101325 * pyo.units.Pa, T= 400 * pyo.units.K)
+    m.fs.steam_properties.htpx(p=101325 * pyo.units.Pa, T= 350 * pyo.units.K)
 )
 m.fs.helm_sb[0].pressure.fix(101325)
 
@@ -87,5 +90,8 @@ results = opt.solve(m, tee=False)
 assert results.solver.termination_condition == pyo.TerminationCondition.optimal
 
 print("milk enth_mol",pyo.value( m.fs.milk_sb[0].enth_mol))
+print("milk vapor fraction",pyo.value( m.fs.milk_sb[0].phase_frac["Vap"]))
+
 print("helm enth_mol",pyo.value( m.fs.helm_sb[0].enth_mol))
+print("helm vapor fraction",pyo.value( m.fs.helm_sb[0].vapor_frac))
 print("difference to add to milk:",pyo.value( m.fs.helm_sb[0].enth_mol) -pyo.value( m.fs.milk_sb[0].enth_mol))
