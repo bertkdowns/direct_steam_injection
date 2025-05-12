@@ -112,7 +112,7 @@ milk_configuration = {
                 },
                 # NIST ignores enth_mol_form_ig_comp_ref, and uses the H parameter instead.
                 "enth_mol_form_liq_comp_ref": (
-                    0, # With "include_enthalpy_of_formation": False, Perrys actually ignores this.
+                    -285.83e3 + 283900,
                     pyunits.J / pyunits.mol,
                 ),  # [1]
                 "entr_mol_form_liq_comp_ref": (
