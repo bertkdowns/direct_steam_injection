@@ -98,7 +98,7 @@ milk_configuration = {
                     ),
                     "F": (-250.8810, pyunits.kJ / pyunits.mol),
                     "G": (223.3967, pyunits.J / pyunits.mol / pyunits.K),
-                    "H": (0, pyunits.kJ / pyunits.mol),
+                    "H": (-241.83 - 45.6, pyunits.kJ / pyunits.mol),
                 },
                 "cp_mol_liq_comp_coeff": {
                     "1": (
@@ -110,11 +110,11 @@ milk_configuration = {
                     "4": (-1.4116e-2, pyunits.J / pyunits.kmol / pyunits.K**4),
                     "5": (9.3701e-6, pyunits.J / pyunits.kmol / pyunits.K**5),
                 },
+                # NIST ignores enth_mol_form_ig_comp_ref, and uses the H parameter instead.
                 "enth_mol_form_liq_comp_ref": (
-                    -285.83e3,
+                    0, # With "include_enthalpy_of_formation": False, Perrys actually ignores this.
                     pyunits.J / pyunits.mol,
                 ),  # [1]
-                "enth_mol_form_vap_comp_ref": (0, pyunits.J / pyunits.mol),  # [1]
                 "entr_mol_form_liq_comp_ref": (
                     69.95, 
                     pyunits.J / pyunits.mol / pyunits.K,
@@ -193,10 +193,11 @@ milk_configuration = {
         "temperature": (273.15, 323.15, 1000, pyunits.K),
         "pressure": (10000, 108900, 1e7, pyunits.Pa),
     },
-    "pressure_ref": (101325, pyunits.Pa),
-    "temperature_ref": (298.15, pyunits.K),
+    "pressure_ref": (611, pyunits.Pa),
+    "temperature_ref": (275.25, pyunits.K),
     # Defining phase equilibria
     "phases_in_equilibrium": [("Vap", "Liq")],
     "phase_equilibrium_state": {("Vap", "Liq"): SmoothVLE},
     "bubble_dew_method": IdealBubbleDew,
+    "include_enthalpy_of_formation": False,
 }

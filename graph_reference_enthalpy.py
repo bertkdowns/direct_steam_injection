@@ -40,41 +40,46 @@ m.fs.helm_sb = m.fs.steam_properties.build_state_block(
 )
 
 # Make the milk sb pure water
-m.fs.milk_sb[0].mole_frac_comp["h2o"].fix(0.9999999)
-m.fs.milk_sb[0].mole_frac_comp["milk_solid"].fix(0.0000001)
+m.fs.milk_sb[0].mole_frac_comp["h2o"].fix(0.99999)
+m.fs.milk_sb[0].mole_frac_comp["milk_solid"].fix(0.00001)
 
 # Set flow
 m.fs.milk_sb[0].flow_mol.fix(1)
 m.fs.helm_sb[0].flow_mol.fix(1)
 
+opt = pyo.SolverFactory("ipopt")
+
+temperature = [280 + i for i in range(150)]
+enthalpy_helm = []
+enthalpy_milk = []
+
 # Set both stateblocks to the same temperature and pressure
-m.fs.milk_sb[0].temperature.fix(300 * pyo.units.K)
-m.fs.milk_sb[0].pressure.fix(101325)
-m.fs.helm_sb[0].enth_mol.fix(
-    m.fs.steam_properties.htpx(p=101325 * pyo.units.Pa, T= 300 * pyo.units.K)
-)
-m.fs.helm_sb[0].pressure.fix(101325)
+for temp in temperature:
+    m.fs.milk_sb[0].temperature.fix(temp * pyo.units.K)
+    m.fs.milk_sb[0].pressure.fix(101325)
+    m.fs.helm_sb[0].enth_mol.fix(
+        m.fs.steam_properties.htpx(p=101325 * pyo.units.Pa, T=temp * pyo.units.K)
+    )
+    m.fs.helm_sb[0].pressure.fix(101325)
+
+    assert degrees_of_freedom(m.fs) == 0
+
+    results = opt.solve(m, tee=False)
+    assert results.solver.termination_condition == pyo.TerminationCondition.optimal
+
+    enthalpy_milk.append(pyo.value(m.fs.milk_sb[0].enth_mol))
+    enthalpy_helm.append(pyo.value(m.fs.helm_sb[0].enth_mol))
 
 
-print(degrees_of_freedom(m.fs.milk_sb[0]))
-print(degrees_of_freedom(m.fs.helm_sb[0]))
-assert degrees_of_freedom(m.fs.milk_sb) == 0
-assert degrees_of_freedom(m.fs.helm_sb) == 0
-assert degrees_of_freedom(m.fs) == 0
+# Graph the results
+import matplotlib.pyplot as plt
+import matplotlib
+matplotlib.use('TkAgg')
 
-opt = pyo.SolverFactory("ipopt")
-results = opt.solve(m, tee=False)
-assert results.solver.termination_condition == pyo.TerminationCondition.optimal
-#m.fs.display()
-
-# Calculate the enthalpy of the milk stateblock
-print("milk enth_mol",pyo.value( m.fs.milk_sb[0].enth_mol))
-print("milk vapor fraction",pyo.value( m.fs.milk_sb[0].phase_frac["Vap"]))
-
-print("helm enth_mol",pyo.value( m.fs.helm_sb[0].enth_mol))
-print("helm vapor fraction",pyo.value( m.fs.helm_sb[0].vapor_frac))
-
-opt = pyo.SolverFactory("ipopt")
-results = opt.solve(m, tee=False)
-assert results.solver.termination_condition == pyo.TerminationCondition.optimal
-
+plt.plot(temperature, enthalpy_milk, label="milk PP")
+plt.plot(temperature, enthalpy_helm, label="steam PP")
+plt.xlabel("Temperature (K)")
+plt.ylabel("Enthalpy (J/mol)")
+plt.title("Enthalpy comparison - milk pp vs helmholtz pp")
+plt.legend()
+plt.show()
