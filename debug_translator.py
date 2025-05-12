@@ -38,6 +38,8 @@ m.fs.translator.inlet.pressure.fix(101325)
 m.fs.translator.inlet.mole_frac_comp[0,"h2o"].fix(0.99)
 m.fs.translator.inlet.mole_frac_comp[0,"milk_solid"].fix(0.01)
 
+m.fs.translator.initialize()
+
 m.fs.translator.display()
 print(degrees_of_freedom(m.fs.translator.properties_in))
 print(degrees_of_freedom(m.fs.translator.properties_out))
@@ -60,3 +62,9 @@ dt.display_components_with_inconsistent_units()
 dt.display_underconstrained_set()
 dt.display_overconstrained_set()
 dt.display_potential_evaluation_errors()
+
+# Print the outlet properties
+print("Outlet properties:")
+print("Temperature:", pyo.value(m.fs.translator.properties_out[0].temperature))
+print("Pressure:", pyo.value(m.fs.translator.properties_out[0].pressure))
+print("Enthalpy:", pyo.value(m.fs.translator.properties_out[0].enth_mol))

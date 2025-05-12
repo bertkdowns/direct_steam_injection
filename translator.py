@@ -50,31 +50,27 @@ class GenericTranslatorData(TranslatorData):
         def eq_outlet_pressure(b, t):
             return b.properties_in[t].pressure == b.properties_out[t].pressure
 
-        # Temperature (= inlet temperature)
+        # Enthalpy (= inlet enthalpy)
         @self.Constraint(
             self.flowsheet().time,
-            doc="Equivalent temperature balance",
+            doc="Enthalpy balance",
         )
-        def eq_outlet_temperature(b, t):
+        def eq_outlet_enth_mol(b, t):
             return (
-                b.properties_in[t].temperature == b.properties_out[t].temperature
+                b.properties_in[t].enth_mol == b.properties_out[t].enth_mol
             )
         
         # Flow
         @self.Constraint(
             self.flowsheet().time,
-            # In theory, we should be able to use the entire phase_component_set.
-            # However, we get a problem with helmholtz pure components when we do this:
-            # if we use StateVars.PH, the property package is overdefined.
-            # That's because it doesn't store the phases seperately, so 
-            # setting defined_state to True doesn't add an extra degree of freedom (i.e remove a constraint) like it normally would.
-            # So, we're going to have to use defined_state = False all the time, and remove one of the flow constraints.
-            # In theory, it can be calculated from the other constraints.
-            [i for i in self.properties_out.phase_component_set][1:],
+            self.config.outlet_property_package.component_list,
             doc="Mass balance for the outlet",
         )
-        def eq_outlet_composition(b, t, p, c):
-            return b.properties_out[t].get_material_flow_terms(p, c) == \
-                b.properties_in[t].get_material_flow_terms(p, c)
-
+        def eq_outlet_composition(b, t, c):
+            return 0 == sum(
+                b.properties_out[t].get_material_flow_terms(p, c)
+                - b.properties_in[t].get_material_flow_terms(p, c)
+                for p in b.properties_out[t].phase_list
+                if (p, c) in b.properties_out[t].phase_component_set
+            ) 
 
