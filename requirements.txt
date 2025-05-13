@@ -1,0 +1,4 @@
+idaes-pse==2.8.0
+matplotlib
+# for initialization_experiment
+ahuora_compounds@git+https://github.com/waikato-ahuora-smart-energy-systems/PropertyPackages.git@v0.0.27 # bed8282 , has the same milk configuration.
