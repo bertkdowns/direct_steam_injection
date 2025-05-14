@@ -104,16 +104,21 @@ TEMPERATURE_VALUES = [351.15, 353.15, 355.15, 357.15, 359.15, 361.15, 363.15, 36
 time_results = []
 iteration_results = []
 solve_status = []
+indexes = []
+
+start = 0
+end = 0
 
 
-for heat_duty in HEAT_DUTY_VALUES:
-    from_json(m,sd=default_values)
+
+def setup():
     start = time.time()
-    
-    
-    #m.fs.effect_1.heat_duty.fix(heat_duty)
-    m.fs.effect_1.outlet.temperature.fix(363.559) 
 
+def restore():
+    from_json(m,sd=default_values)
+
+
+def initialize():
     def init_unit(unit):
         print(f"Initializing unit {unit}")
         unit.initialize()#outlvl=idaeslog.DEBUG
@@ -133,25 +138,84 @@ for heat_duty in HEAT_DUTY_VALUES:
     # seq.options["solve_tears"] = False
     res = seq.run(m, init_unit)
 
-    # Solve the model
-    print("Degrees of freedom:", degrees_of_freedom(m))
-    print("Degrees of freedom in dsi:", degrees_of_freedom(m.fs.dsi))
-    print("Degrees of freedom in flash:", degrees_of_freedom(m.fs.flash))
-    print("Degrees of freedom in flash_phase_separator:", degrees_of_freedom(m.fs.flash_phase_separator))
-
+def solve():
     assert degrees_of_freedom(m) == 0
     opt = Ipopt()
     opt.config.raise_exception_on_nonoptimal_result = False
     status = opt.solve(m, tee=False)
-    print(status.iteration_count)
-    print(status.timing_info.wall_time)
-    print(status.termination_condition)
-    print(status.solution_status)
 
     end = time.time()
     time_results.append(end - start)
     iteration_results.append(status.iteration_count)
-    solve_status.append(status.solution_status)   
+    solve_status.append(status.solution_status) 
 
-for results in zip(HEAT_DUTY_VALUES, time_results, iteration_results, solve_status):
+for heat_duty in HEAT_DUTY_VALUES:
+    restore()
+    setup()
+    m.fs.effect_1.heat_duty.fix(heat_duty)
+    initialize()
+    solve()
+    indexes.append("heat duty of " + str(heat_duty) + "with initialisation")
+
+for heat_duty in HEAT_DUTY_VALUES:
+    setup()
+    m.fs.effect_1.heat_duty.fix(heat_duty)
+    solve()
+    indexes.append("heat duty of " + str(heat_duty) + "from previous solve")
+
+m.fs.effect_1.heat_duty.unfix()
+
+for temperature in TEMPERATURE_VALUES:
+    setup()
+    m.fs.effect_1.outlet.temperature.fix(temperature)
+    solve()
+    indexes.append("temperature of " + str(temperature) +  "from previous solve")
+
+
+for temperature in TEMPERATURE_VALUES:
+    restore()
+    setup()
+    m.fs.effect_1.outlet.temperature.fix(temperature)
+    initialize()
+    solve()
+    indexes.append("temperature of " + str(temperature) + "with initialisation")
+
+
+
+for results in zip(indexes, time_results, iteration_results, solve_status):
     print(results)
+
+
+# RESULTS:
+# ('heat duty of 0with initialisation', 1747198909.3097882, 54, <SolutionStatus.optimal: 30>)
+# ('heat duty of 1000with initialisation', 1747198910.2746341, 41, <SolutionStatus.optimal: 30>)
+# ('heat duty of 2000with initialisation', 1747198911.2158277, 45, <SolutionStatus.optimal: 30>)
+# ('heat duty of 4000with initialisation', 1747198912.1927621, 37, <SolutionStatus.optimal: 30>)
+# ('heat duty of 8000with initialisation', 1747198914.9626613, 41, <SolutionStatus.optimal: 30>)
+# ('heat duty of 12000with initialisation', 1747198916.2430482, 49, <SolutionStatus.optimal: 30>)
+# ('heat duty of 16000with initialisation', 1747198917.4929671, 43, <SolutionStatus.optimal: 30>)
+# ('heat duty of 20000with initialisation', 1747198918.7457302, 38, <SolutionStatus.optimal: 30>)
+# ('heat duty of 0from previous solve', 1747198918.8494484, 5, <SolutionStatus.optimal: 30>)
+# ('heat duty of 1000from previous solve', 1747198918.9427526, 3, <SolutionStatus.optimal: 30>)
+# ('heat duty of 2000from previous solve', 1747198919.0285869, 3, <SolutionStatus.optimal: 30>)
+# ('heat duty of 4000from previous solve', 1747198919.1006107, 3, <SolutionStatus.optimal: 30>)
+# ('heat duty of 8000from previous solve', 1747198919.2154703, 3, <SolutionStatus.optimal: 30>)
+# ('heat duty of 12000from previous solve', 1747198919.3020387, 3, <SolutionStatus.optimal: 30>)
+# ('heat duty of 16000from previous solve', 1747198919.3647237, 3, <SolutionStatus.optimal: 30>)
+# ('heat duty of 20000from previous solve', 1747198919.4306092, 3, <SolutionStatus.optimal: 30>)
+# ('temperature of 351.15from previous solve', 1747198919.4881127, 3, <SolutionStatus.optimal: 30>)
+# ('temperature of 353.15from previous solve', 1747198919.5464303, 3, <SolutionStatus.optimal: 30>)
+# ('temperature of 355.15from previous solve', 1747198919.6245704, 3, <SolutionStatus.optimal: 30>)
+# ('temperature of 357.15from previous solve', 1747198919.6825476, 3, <SolutionStatus.optimal: 30>)
+# ('temperature of 359.15from previous solve', 1747198919.739625, 3, <SolutionStatus.optimal: 30>)
+# ('temperature of 361.15from previous solve', 1747198919.7968721, 3, <SolutionStatus.optimal: 30>)
+# ('temperature of 363.15from previous solve', 1747198919.8540025, 3, <SolutionStatus.optimal: 30>)
+# ('temperature of 365.15from previous solve', 1747198919.9091635, 3, <SolutionStatus.optimal: 30>)
+# ('temperature of 351.15with initialisation', 1747198921.2816014, 59, <SolutionStatus.infeasible: 10>)
+# ('temperature of 353.15with initialisation', 1747198922.5739474, 40, <SolutionStatus.infeasible: 10>)
+# ('temperature of 355.15with initialisation', 1747198923.8603303, 39, <SolutionStatus.infeasible: 10>)
+# ('temperature of 357.15with initialisation', 1747198925.051257, 43, <SolutionStatus.infeasible: 10>)
+# ('temperature of 359.15with initialisation', 1747198926.3868954, 47, <SolutionStatus.infeasible: 10>)
+# ('temperature of 361.15with initialisation', 1747198927.6938353, 51, <SolutionStatus.infeasible: 10>)
+# ('temperature of 363.15with initialisation', 1747198928.9956284, 53, <SolutionStatus.infeasible: 10>)
+# ('temperature of 365.15with initialisation', 1747198930.4059975, 49, <SolutionStatus.infeasible: 10>)
