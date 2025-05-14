@@ -99,8 +99,8 @@ m.fs.flash_phase_separator.split_fraction[0,"outlet_1", "Liq"].fix(0.99)
 default_values = to_json(m,return_dict=True)
 
 
-HEAT_DUTY_VALUES = [0,1000,2000, 4000, 8000, 12000, 16000, 20000, 30000,4000]
-TEMPERATURE_VALUES = [351.15, 353.15, 355.15, 357.15, 359.15, 361.15, 363.15, 365.15, 330.15]
+HEAT_DUTY_VALUES = [0,1000,2000, 4000, 8000, 12000, 16000, 20000, 30000,60000]
+TEMPERATURE_VALUES = [351.15, 353.15, 355.15, 357.15, 359.15, 361.15, 363.15, 365.15, 330.15,375.15]
 time_results = []
 iteration_results = []
 solve_status = []
