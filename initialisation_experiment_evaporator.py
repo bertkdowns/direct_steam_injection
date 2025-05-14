@@ -99,19 +99,20 @@ m.fs.flash_phase_separator.split_fraction[0,"outlet_1", "Liq"].fix(0.99)
 default_values = to_json(m,return_dict=True)
 
 
-HEAT_DUTY_VALUES = [0,1000,2000, 4000, 8000, 12000, 16000, 20000]
-TEMPERATURE_VALUES = [351.15, 353.15, 355.15, 357.15, 359.15, 361.15, 363.15, 365.15]
+HEAT_DUTY_VALUES = [0,1000,2000, 4000, 8000, 12000, 16000, 20000, 30000,4000]
+TEMPERATURE_VALUES = [351.15, 353.15, 355.15, 357.15, 359.15, 361.15, 363.15, 365.15, 330.15]
 time_results = []
 iteration_results = []
 solve_status = []
 indexes = []
 
-start = 0
-end = 0
+global start
+global end
 
 
 
 def setup():
+    global start
     start = time.time()
 
 def restore():
@@ -143,7 +144,8 @@ def solve():
     opt = Ipopt()
     opt.config.raise_exception_on_nonoptimal_result = False
     status = opt.solve(m, tee=False)
-
+    global end
+    global start
     end = time.time()
     time_results.append(end - start)
     iteration_results.append(status.iteration_count)
@@ -155,13 +157,13 @@ for heat_duty in HEAT_DUTY_VALUES:
     m.fs.effect_1.heat_duty.fix(heat_duty)
     initialize()
     solve()
-    indexes.append("heat duty of " + str(heat_duty) + "with initialisation")
+    indexes.append("heat duty of " + str(heat_duty) + " with initialisation")
 
 for heat_duty in HEAT_DUTY_VALUES:
     setup()
     m.fs.effect_1.heat_duty.fix(heat_duty)
     solve()
-    indexes.append("heat duty of " + str(heat_duty) + "from previous solve")
+    indexes.append("heat duty of " + str(heat_duty) + " from previous solve")
 
 m.fs.effect_1.heat_duty.unfix()
 
@@ -169,7 +171,7 @@ for temperature in TEMPERATURE_VALUES:
     setup()
     m.fs.effect_1.outlet.temperature.fix(temperature)
     solve()
-    indexes.append("temperature of " + str(temperature) +  "from previous solve")
+    indexes.append("temperature of " + str(temperature) +  " from previous solve")
 
 
 for temperature in TEMPERATURE_VALUES:
@@ -178,7 +180,7 @@ for temperature in TEMPERATURE_VALUES:
     m.fs.effect_1.outlet.temperature.fix(temperature)
     initialize()
     solve()
-    indexes.append("temperature of " + str(temperature) + "with initialisation")
+    indexes.append("temperature of " + str(temperature) + " with initialisation")
 
 
 
@@ -187,35 +189,41 @@ for results in zip(indexes, time_results, iteration_results, solve_status):
 
 
 # RESULTS:
-# ('heat duty of 0with initialisation', 1747198909.3097882, 54, <SolutionStatus.optimal: 30>)
-# ('heat duty of 1000with initialisation', 1747198910.2746341, 41, <SolutionStatus.optimal: 30>)
-# ('heat duty of 2000with initialisation', 1747198911.2158277, 45, <SolutionStatus.optimal: 30>)
-# ('heat duty of 4000with initialisation', 1747198912.1927621, 37, <SolutionStatus.optimal: 30>)
-# ('heat duty of 8000with initialisation', 1747198914.9626613, 41, <SolutionStatus.optimal: 30>)
-# ('heat duty of 12000with initialisation', 1747198916.2430482, 49, <SolutionStatus.optimal: 30>)
-# ('heat duty of 16000with initialisation', 1747198917.4929671, 43, <SolutionStatus.optimal: 30>)
-# ('heat duty of 20000with initialisation', 1747198918.7457302, 38, <SolutionStatus.optimal: 30>)
-# ('heat duty of 0from previous solve', 1747198918.8494484, 5, <SolutionStatus.optimal: 30>)
-# ('heat duty of 1000from previous solve', 1747198918.9427526, 3, <SolutionStatus.optimal: 30>)
-# ('heat duty of 2000from previous solve', 1747198919.0285869, 3, <SolutionStatus.optimal: 30>)
-# ('heat duty of 4000from previous solve', 1747198919.1006107, 3, <SolutionStatus.optimal: 30>)
-# ('heat duty of 8000from previous solve', 1747198919.2154703, 3, <SolutionStatus.optimal: 30>)
-# ('heat duty of 12000from previous solve', 1747198919.3020387, 3, <SolutionStatus.optimal: 30>)
-# ('heat duty of 16000from previous solve', 1747198919.3647237, 3, <SolutionStatus.optimal: 30>)
-# ('heat duty of 20000from previous solve', 1747198919.4306092, 3, <SolutionStatus.optimal: 30>)
-# ('temperature of 351.15from previous solve', 1747198919.4881127, 3, <SolutionStatus.optimal: 30>)
-# ('temperature of 353.15from previous solve', 1747198919.5464303, 3, <SolutionStatus.optimal: 30>)
-# ('temperature of 355.15from previous solve', 1747198919.6245704, 3, <SolutionStatus.optimal: 30>)
-# ('temperature of 357.15from previous solve', 1747198919.6825476, 3, <SolutionStatus.optimal: 30>)
-# ('temperature of 359.15from previous solve', 1747198919.739625, 3, <SolutionStatus.optimal: 30>)
-# ('temperature of 361.15from previous solve', 1747198919.7968721, 3, <SolutionStatus.optimal: 30>)
-# ('temperature of 363.15from previous solve', 1747198919.8540025, 3, <SolutionStatus.optimal: 30>)
-# ('temperature of 365.15from previous solve', 1747198919.9091635, 3, <SolutionStatus.optimal: 30>)
-# ('temperature of 351.15with initialisation', 1747198921.2816014, 59, <SolutionStatus.infeasible: 10>)
-# ('temperature of 353.15with initialisation', 1747198922.5739474, 40, <SolutionStatus.infeasible: 10>)
-# ('temperature of 355.15with initialisation', 1747198923.8603303, 39, <SolutionStatus.infeasible: 10>)
-# ('temperature of 357.15with initialisation', 1747198925.051257, 43, <SolutionStatus.infeasible: 10>)
-# ('temperature of 359.15with initialisation', 1747198926.3868954, 47, <SolutionStatus.infeasible: 10>)
-# ('temperature of 361.15with initialisation', 1747198927.6938353, 51, <SolutionStatus.infeasible: 10>)
-# ('temperature of 363.15with initialisation', 1747198928.9956284, 53, <SolutionStatus.infeasible: 10>)
-# ('temperature of 365.15with initialisation', 1747198930.4059975, 49, <SolutionStatus.infeasible: 10>)
+# ('heat duty of 0 with initialisation', 0.9865739345550537, 54, <SolutionStatus.optimal: 30>)
+# ('heat duty of 1000 with initialisation', 1.3341705799102783, 41, <SolutionStatus.optimal: 30>)
+# ('heat duty of 2000 with initialisation', 2.3008036613464355, 45, <SolutionStatus.optimal: 30>)
+# ('heat duty of 4000 with initialisation', 1.2961623668670654, 37, <SolutionStatus.optimal: 30>)
+# ('heat duty of 8000 with initialisation', 1.3963162899017334, 41, <SolutionStatus.optimal: 30>)
+# ('heat duty of 12000 with initialisation', 1.2948670387268066, 49, <SolutionStatus.optimal: 30>)
+# ('heat duty of 16000 with initialisation', 1.1932551860809326, 43, <SolutionStatus.optimal: 30>)
+# ('heat duty of 20000 with initialisation', 1.2919673919677734, 38, <SolutionStatus.optimal: 30>)
+# ('heat duty of 30000 with initialisation', 1.2608609199523926, 34, <SolutionStatus.optimal: 30>)
+# ('heat duty of 4000 with initialisation', 1.2732441425323486, 37, <SolutionStatus.optimal: 30>)
+# ('heat duty of 0 from previous solve', 0.1572403907775879, 4, <SolutionStatus.optimal: 30>)
+# ('heat duty of 1000 from previous solve', 0.09160971641540527, 3, <SolutionStatus.optimal: 30>)
+# ('heat duty of 2000 from previous solve', 0.11079621315002441, 3, <SolutionStatus.optimal: 30>)
+# ('heat duty of 4000 from previous solve', 0.10798478126525879, 3, <SolutionStatus.optimal: 30>)
+# ('heat duty of 8000 from previous solve', 0.07496857643127441, 3, <SolutionStatus.optimal: 30>)
+# ('heat duty of 12000 from previous solve', 0.06638979911804199, 3, <SolutionStatus.optimal: 30>)
+# ('heat duty of 16000 from previous solve', 0.061025142669677734, 3, <SolutionStatus.optimal: 30>)
+# ('heat duty of 20000 from previous solve', 0.05940508842468262, 3, <SolutionStatus.optimal: 30>)
+# ('heat duty of 30000 from previous solve', 0.05750107765197754, 3, <SolutionStatus.optimal: 30>)
+# ('heat duty of 4000 from previous solve', 0.0580286979675293, 4, <SolutionStatus.optimal: 30>)
+# ('temperature of 351.15 from previous solve', 0.05791807174682617, 3, <SolutionStatus.optimal: 30>)
+# ('temperature of 353.15 from previous solve', 0.05661654472351074, 3, <SolutionStatus.optimal: 30>)
+# ('temperature of 355.15 from previous solve', 0.05655193328857422, 3, <SolutionStatus.optimal: 30>)
+# ('temperature of 357.15 from previous solve', 0.056191205978393555, 3, <SolutionStatus.optimal: 30>)
+# ('temperature of 359.15 from previous solve', 0.05602288246154785, 3, <SolutionStatus.optimal: 30>)
+# ('temperature of 361.15 from previous solve', 0.056138038635253906, 3, <SolutionStatus.optimal: 30>)
+# ('temperature of 363.15 from previous solve', 0.055830955505371094, 3, <SolutionStatus.optimal: 30>)
+# ('temperature of 365.15 from previous solve', 0.08025932312011719, 3, <SolutionStatus.optimal: 30>)
+# ('temperature of 330.15 from previous solve', 0.05438590049743652, 3, <SolutionStatus.optimal: 30>)
+# ('temperature of 351.15 with initialisation', 1.3014867305755615, 59, <SolutionStatus.infeasible: 10>)
+# ('temperature of 353.15 with initialisation', 1.2377779483795166, 40, <SolutionStatus.infeasible: 10>)
+# ('temperature of 355.15 with initialisation', 1.3015146255493164, 39, <SolutionStatus.infeasible: 10>)
+# ('temperature of 357.15 with initialisation', 1.325639009475708, 43, <SolutionStatus.infeasible: 10>)
+# ('temperature of 359.15 with initialisation', 1.315643310546875, 47, <SolutionStatus.infeasible: 10>)
+# ('temperature of 361.15 with initialisation', 1.4199199676513672, 51, <SolutionStatus.infeasible: 10>)
+# ('temperature of 363.15 with initialisation', 1.403618574142456, 53, <SolutionStatus.infeasible: 10>)
+# ('temperature of 365.15 with initialisation', 1.429168939590454, 49, <SolutionStatus.infeasible: 10>)
+# ('temperature of 330.15 with initialisation', 1.2610621452331543, 42, <SolutionStatus.infeasible: 10>)
