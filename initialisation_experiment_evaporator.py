@@ -36,10 +36,10 @@ m.fs.flash_phase_separator = Separator(
     property_package=m.fs.milk_properties,
     split_basis=SplittingType.phaseFlow
 )
-# m.fs.effect_1 = Heater(
-#     property_package=m.fs.properties,
-#     has_pressure_change=False,
-# )
+m.fs.effect_1 = Heater(
+    property_package=m.fs.milk_properties,
+    has_pressure_change=False,
+)
 # m.fs.effect_phase_separator = Separator(
 #     property_package=m.fs.properties,
 #     splitting_type=SplittingType.phaseFlow
@@ -54,10 +54,10 @@ m.fs.dsi_to_flash = Arc(source=m.fs.dsi.outlet, destination=m.fs.flash.inlet)
 m.fs.flash_to_phase_separator = Arc(
     source=m.fs.flash.outlet, destination=m.fs.flash_phase_separator.inlet
 )
-# m.fs.flash_phase_separator_to_effect = Arc(
-#     source=m.fs.flash_phase_separator.outlet_1,
-#     destination=m.fs.effect_1.inlet,
-# )
+m.fs.flash_phase_separator_to_effect = Arc(
+    source=m.fs.flash_phase_separator.outlet_1,
+    destination=m.fs.effect_1.inlet,
+)
 # m.fs.effect_to_phase_separator = Arc(
 #     source=m.fs.effect_1.outlet, destination=m.fs.effect_phase_separator.inlet
 # )
@@ -90,13 +90,12 @@ m.fs.flash.Cv.unfix() # IDK why this is fixed by default.
 
 
 
-m.fs.flash_phase_separator.split_fraction[0,"outlet_1", "Vap"].fix(0.99)
-m.fs.flash_phase_separator.split_fraction[0,"outlet_1", "Liq"].fix(0.01)
+m.fs.flash_phase_separator.split_fraction[0,"outlet_1", "Vap"].fix(0.02)
+m.fs.flash_phase_separator.split_fraction[0,"outlet_1", "Liq"].fix(0.99)
 
 
-
-# Initialize the model
-
+m.fs.effect_1.heat_duty.fix(-15_000)
+#m.fs.effect_1.outlet.temperature.fix(363.559) 
 
 def init_unit(unit):
     print(f"Initializing unit {unit}")
@@ -125,10 +124,33 @@ print("Degrees of freedom in flash_phase_separator:", degrees_of_freedom(m.fs.fl
 
 assert degrees_of_freedom(m) == 0
 opt = Ipopt()
+opt.config.raise_exception_on_nonoptimal_result = False
 status = opt.solve(m, tee=True)
-assert_optimal_termination(status)
 status.display()
 print(status.iteration_count)
 print(status.timing_info.wall_time)
 print(status.termination_condition)
 print(status.solution_status)
+
+print(m.fs.effect_1.outlet.temperature[0].value)
+print(m.fs.effect_1.outlet.mole_frac_comp[0,"milk_solid"].value)
+print(m.fs.effect_1.outlet.mole_frac_comp[0,"water"].value)
+
+
+assert_optimal_termination(status)
+
+# This solves with heat duty fixed fine, but if you uncommented the line above that 
+# fixes the effect_1 outlet temperature, and comment out the heat_duty, it would not solve.
+# However, we now show that once you have solved with the heat_duty fixed, you can then
+# unfix the heat_duty and fix the temperature and it solves fine.
+
+m.fs.effect_1.heat_duty.unfix()
+m.fs.effect_1.outlet.temperature.fix(360.559) 
+
+status2 = opt.solve(m, tee=True)
+print("attempt 2")
+assert_optimal_termination(status2)
+print("Iterations of first solve:", status.iteration_count)
+print("Iterations of second solve:", status2.iteration_count)
+print("Wall time of first solve:", status.timing_info.wall_time)
+print("Wall time of second solve:", status2.timing_info.wall_time)
