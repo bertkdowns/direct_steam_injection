@@ -100,6 +100,7 @@ default_values = to_json(m,return_dict=True)
 
 
 HEAT_DUTY_VALUES = [0,1000,2000, 4000, 8000, 12000, 16000, 20000]
+TEMPERATURE_VALUES = [351.15, 353.15, 355.15, 357.15, 359.15, 361.15, 363.15, 365.15]
 time_results = []
 iteration_results = []
 solve_status = []
@@ -110,8 +111,8 @@ for heat_duty in HEAT_DUTY_VALUES:
     start = time.time()
     
     
-    m.fs.effect_1.heat_duty.fix(heat_duty)
-    #m.fs.effect_1.outlet.temperature.fix(363.559) 
+    #m.fs.effect_1.heat_duty.fix(heat_duty)
+    m.fs.effect_1.outlet.temperature.fix(363.559) 
 
     def init_unit(unit):
         print(f"Initializing unit {unit}")
